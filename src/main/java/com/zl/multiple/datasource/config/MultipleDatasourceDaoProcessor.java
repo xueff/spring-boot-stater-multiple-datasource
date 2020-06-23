@@ -12,10 +12,12 @@ import org.springframework.core.annotation.AnnotationUtils;
 import java.lang.reflect.Method;
 
 public class MultipleDatasourceDaoProcessor implements BeanPostProcessor {
+    @Override
     public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
         return bean;
     }
 
+    @Override
     public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
         Class<?> targetClass = bean.getClass();
         SelectDatabase selected = AnnotationUtils.findAnnotation(targetClass, SelectDatabase.class);

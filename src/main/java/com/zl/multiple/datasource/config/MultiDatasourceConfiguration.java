@@ -1,5 +1,8 @@
 package com.zl.multiple.datasource.config;
 
+import cn.hutool.core.util.HexUtil;
+import cn.hutool.crypto.SecureUtil;
+import cn.hutool.crypto.symmetric.DES;
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 import com.zl.multiple.datasource.entity.MultiDatasourceProperties;
 import com.zl.multiple.datasource.util.DynamicDataSource;
@@ -24,13 +27,15 @@ import java.util.Map;
 @Configuration
 @EnableConfigurationProperties(MultiDatasourceProperties.class)
 @AutoConfigureBefore(DataSourceAutoConfiguration.class)
-@ComponentScan("com.zl.springbootstatermultipledatasource")
+@ComponentScan("xf.zl.springbootstatermultipledatasource")
 public class MultiDatasourceConfiguration {
 
     public static final int INITIAL_CAPACITY = 10;
+    static final String key = "xsdgffdekeyqweas";
 
     @Bean("dynamicDataSource")
     public DynamicDataSource dynamicDataSource(MultiDatasourceProperties multiDatasourceProperties, DataSourceProperties defaultDataSourceProperties) {
+        desCript(defaultDataSourceProperties);
 
         //创建动态数据源
         DynamicDataSource dynamicDataSource = new DynamicDataSource();
@@ -56,11 +61,36 @@ public class MultiDatasourceConfiguration {
 
         for (Map.Entry<String, DataSourceProperties> entry : properties.entrySet()) {
             DataSource db = getDataSource(poolClass, entry.getValue());
+            desCript(entry.getValue());
             dataSources.put(entry.getKey(), db);
         }
         dynamicDataSource.setTargetDataSources(dataSources);
 
         return dynamicDataSource;
+    }
+
+    private DataSourceProperties desCript(DataSourceProperties properties){
+        properties.setPassword(decryptStr(properties.getPassword()));
+        return properties;
+    }
+
+
+
+    public static String decryptStr(String passod) {
+        DES des = SecureUtil.des(key.getBytes());
+        try {
+            passod = des.decryptStr(passod);
+        }catch (Exception e){}
+        return passod;
+    }
+    public static String encrypt(String passod) {
+        try {
+            DES des = SecureUtil.des(key.getBytes());
+            return HexUtil.encodeHexStr( des.encrypt(passod));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "";
     }
 
     @Bean
