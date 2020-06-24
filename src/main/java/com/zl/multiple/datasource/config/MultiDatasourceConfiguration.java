@@ -3,7 +3,6 @@ package com.zl.multiple.datasource.config;
 import cn.hutool.core.util.HexUtil;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.crypto.symmetric.DES;
-import com.mchange.v2.c3p0.ComboPooledDataSource;
 import com.zl.multiple.datasource.entity.MultiDatasourceProperties;
 import com.zl.multiple.datasource.util.DynamicDataSource;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
@@ -35,7 +34,7 @@ public class MultiDatasourceConfiguration {
 
     @Bean("dynamicDataSource")
     public DynamicDataSource dynamicDataSource(MultiDatasourceProperties multiDatasourceProperties, DataSourceProperties defaultDataSourceProperties) {
-        desCript(defaultDataSourceProperties);
+        defaultDataSourceProperties = desCript(defaultDataSourceProperties);
 
         //创建动态数据源
         DynamicDataSource dynamicDataSource = new DynamicDataSource();
@@ -43,11 +42,12 @@ public class MultiDatasourceConfiguration {
         Map<Object, Object> dataSources = new HashMap(INITIAL_CAPACITY);
 
         Map<String, DataSourceProperties> properties = multiDatasourceProperties.getMulti();
-        String poolClassName = multiDatasourceProperties.getPoolClassName();
-        if (poolClassName == null) {
-            //默认使用c3p0数据库连接池
-            poolClassName = ComboPooledDataSource.class.getName();
-        }
+//        String poolClassName = multiDatasourceProperties.getPoolClassName();
+        String poolClassName = "com.alibaba.druid.pool.DruidDataSource";
+//        if (poolClassName == null) {
+//            //默认使用c3p0数据库连接池
+//            poolClassName = ComboPooledDataSource.class.getName();
+//        }
         Class<DataSource> poolClass = null;
         try {
             poolClass = (Class<DataSource>) Class.forName(poolClassName);
@@ -60,8 +60,8 @@ public class MultiDatasourceConfiguration {
         dynamicDataSource.setDefaultTargetDataSource(defaultDb);
 
         for (Map.Entry<String, DataSourceProperties> entry : properties.entrySet()) {
+            entry.setValue(desCript(entry.getValue()));
             DataSource db = getDataSource(poolClass, entry.getValue());
-            desCript(entry.getValue());
             dataSources.put(entry.getKey(), db);
         }
         dynamicDataSource.setTargetDataSources(dataSources);
